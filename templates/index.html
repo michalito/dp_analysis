@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Sales Data Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  </head>
+  <body>
+    <h1>Upload Sales Data CSV</h1>
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+      <input type="file" name="file">
+      <input type="submit" value="Upload">
+    </form>
+    <br>
+    <h2>Currently Uploaded File: {{ uploaded_file }}</h2>
+    <br>
+    <h2>Download Processed CSV</h2>
+    <button onclick="window.location.href='/download'">Download Summary CSV</button>
+    <br>
+    <h2>Visualizations</h2>
+    <div>
+      <h3>Quantity</h3>
+      <button onclick="fetchVisualization('Total Quantity', 'day')">Daily Sales (Quantity)</button>
+      <button onclick="fetchVisualization('Total Quantity', 'week')">Weekly Sales (Quantity)</button>
+      <button onclick="fetchVisualization('Total Quantity', 'month')">Monthly Sales (Quantity)</button>
+      <button onclick="fetchVisualization('Total Quantity', 'year')">Yearly Sales (Quantity)</button>
+    </div>
+    <div>
+      <h3>Amount</h3>
+      <button onclick="fetchVisualization('Total Amount', 'day')">Daily Sales (Amount)</button>
+      <button onclick="fetchVisualization('Total Amount', 'week')">Weekly Sales (Amount)</button>
+      <button onclick="fetchVisualization('Total Amount', 'month')">Monthly Sales (Amount)</button>
+      <button onclick="fetchVisualization('Total Amount', 'year')">Yearly Sales (Amount)</button>
+    </div>
+    <div id="visualization" style="width: 100%; height: 500px;"></div>
+    <script>
+      function fetchVisualization(metric, period) {
+        fetch(`/visualize_sales/${metric}/${period}`)
+          .then(response => response.json())
+          .then(data => {
+            let plotDiv = document.getElementById('visualization');
+            let parsedData = JSON.parse(data);
+            Plotly.newPlot(plotDiv, parsedData.data, parsedData.layout);
+          })
+          .catch(error => console.error('Error fetching visualization:', error));
+      }
+    </script>
+  </body>
+</html>
