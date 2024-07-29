@@ -2,34 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Sales Data Visualization</title>
+    <title>Filtered Sales Data Visualization</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   </head>
   <body>
     <header>
-      <h1>Sales Data Visualization</h1>
+      <h1>Filtered Sales Data Visualization</h1>
     </header>
     <main>
-      <h2>Upload Sales Data CSV</h2>
-      <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <button type="submit">
-          <span class="material-icons">file_upload</span> Upload
-        </button>
-      </form>
-      <br>
       <h2>Currently Uploaded File: {{ uploaded_file }}</h2>
       <br>
       <h2>Download Processed CSV</h2>
-      <button onclick="window.location.href='/download'">
-        <span class="material-icons">download</span> Download Summary CSV
+      <button onclick="window.location.href='/download_filtered'">
+        <span class="material-icons">download</span> Download Filtered Summary CSV
       </button>
       <br>
-      <h2>Filtered Page</h2>
-      <button onclick="window.location.href='/filtered'">
-        <span class="material-icons">filter_list</span> Go to Filtered Page
+      <h2>Index Page</h2>
+      <button onclick="window.location.href='/'">
+        <span class="material-icons">home</span> Go to Index Page
       </button>
       <br>
       <h2>Visualizations</h2>
@@ -77,7 +69,7 @@
     </main>
     <script>
       function fetchVisualization(metric, period) {
-        fetch(`/visualize_sales/${metric}/${period}`)
+        fetch(`/visualize_sales_filtered/${metric}/${period}`)
           .then(response => response.json())
           .then(data => {
             let plotDiv = document.getElementById('visualization');
@@ -88,7 +80,7 @@
       }
 
       function fetchShippingVisualization() {
-        fetch(`/visualize_shipping_methods`)
+        fetch(`/visualize_shipping_methods_filtered`)
           .then(response => response.json())
           .then(data => {
             let plotDiv = document.getElementById('visualization');
