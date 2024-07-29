@@ -1,25 +1,74 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, flash
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from process_csv import process_csv, process_filtered_csv
 import pandas as pd
 import os
 import plotly.express as px
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
-# Store the uploaded file name and current file in use
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Read admin password from environment variable
+admin_password = os.environ.get('ADMIN_PASSWORD', 'default_password')
+
+# Mock user database
+users = {
+    'admin': {
+        'password': generate_password_hash(admin_password)
+    }
+}
+
+class User(UserMixin):
+    def __init__(self, username):
+        self.id = username
+
+@login_manager.user_loader
+def load_user(user_id):
+    if user_id not in users:
+        return None
+    return User(user_id)
+
+# Initialize global variables
 uploaded_file_name = None
 current_file = 'input_sales_data.csv'
 filtered_file = 'filtered_sales_data.csv'
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username in users and check_password_hash(users[username]['password'], password):
+            user = User(username)
+            login_user(user)
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid username or password')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html', uploaded_file=uploaded_file_name)
 
 @app.route('/filtered')
+@login_required
 def filtered():
     return render_template('filtered.html', uploaded_file=uploaded_file_name)
 
 @app.route('/upload', methods=['POST'])
+@login_required
 def upload_file():
     global uploaded_file_name, current_file, filtered_file
     if 'file' not in request.files:
@@ -51,6 +100,7 @@ def upload_file():
     return redirect(request.url)
 
 @app.route('/download')
+@login_required
 def download_file():
     file_path = 'output_summary.csv'
     if os.path.exists(file_path):
@@ -59,6 +109,7 @@ def download_file():
         return "File not found", 404
 
 @app.route('/download_filtered')
+@login_required
 def download_filtered_file():
     if os.path.exists(filtered_file):
         return send_file(filtered_file, as_attachment=True)
@@ -66,6 +117,7 @@ def download_filtered_file():
         return "File not found", 404
 
 @app.route('/visualize_sales/<metric>/<period>')
+@login_required
 def visualize_sales(metric, period):
     df = pd.read_csv('output_summary.csv')
     df['Date'] = pd.to_datetime(df['Date'])
@@ -92,6 +144,7 @@ def visualize_sales(metric, period):
     return jsonify(graph_json)
 
 @app.route('/visualize_sales_filtered/<metric>/<period>')
+@login_required
 def visualize_sales_filtered(metric, period):
     df = pd.read_csv(filtered_file)
     df['Date'] = pd.to_datetime(df['Date'])
@@ -118,6 +171,7 @@ def visualize_sales_filtered(metric, period):
     return jsonify(graph_json)
 
 @app.route('/visualize_shipping_methods')
+@login_required
 def visualize_shipping_methods():
     df = pd.read_csv('output_summary.csv')
     
@@ -128,6 +182,7 @@ def visualize_shipping_methods():
     return jsonify(graph_json)
 
 @app.route('/visualize_shipping_methods_filtered')
+@login_required
 def visualize_shipping_methods_filtered():
     df = pd.read_csv(filtered_file)
     
