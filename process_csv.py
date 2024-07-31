@@ -3,9 +3,13 @@ from datetime import datetime
 import csv
 
 def process_csv(input_file, output_file):
-    # Read the CSV file
-    df = pd.read_csv(input_file)
-    print(f"CSV file read: {input_file}")
+    # Read the CSV file with the specified encoding
+    try:
+        df = pd.read_csv(input_file, encoding='utf-8')
+        print(f"CSV file read: {input_file}")
+    except UnicodeDecodeError as e:
+        print(f"Error reading CSV file: {e}")
+        return
 
     # Initialize a dictionary to store the results
     summary = {}
@@ -14,7 +18,7 @@ def process_csv(input_file, output_file):
     for _, row in df.iterrows():
         date = datetime.strptime(row['Date created'], '%d/%m/%Y %H:%M').date()
         shipping_method = row['Shipping Method'].strip() if pd.notna(row['Shipping Method']) and row['Shipping Method'].strip() else "In-Store"
-        
+
         # Process the line items
         line_items = row['Line items'].split(', Name:')
         for item in line_items:
@@ -28,54 +32,60 @@ def process_csv(input_file, output_file):
                 if len(parts) < 2:
                     continue
                 total = float(parts[1].strip())
-                
+
                 name_parts = parts[0].split('Quantity:')
                 if len(name_parts) < 2:
                     continue
-                
+
                 quantity = int(name_parts[1].strip())
                 name = name_parts[0].split('Name:')[1].strip()
-                
+
                 if date not in summary:
                     summary[date] = {}
                 if name not in summary[date]:
                     summary[date][name] = {'quantity': 0, 'total': 0, 'shipping_methods': {}}
-                
+
                 summary[date][name]['quantity'] += quantity
                 summary[date][name]['total'] += total
-                
+
                 if shipping_method not in summary[date][name]['shipping_methods']:
                     summary[date][name]['shipping_methods'][shipping_method] = {'quantity': 0, 'total': 0}
-                
+
                 summary[date][name]['shipping_methods'][shipping_method]['quantity'] += quantity
                 summary[date][name]['shipping_methods'][shipping_method]['total'] += total
             except (IndexError, ValueError) as e:
                 # Log the error or handle it as needed
                 print(f"Error processing line item: {item}, error: {e}")
-    
-    # Write the summary to a new CSV file
-    with open(output_file, 'w', newline='') as csvfile:
-        fieldnames = ['Date', 'Product Name', 'Shipping Method', 'Total Quantity', 'Total Amount']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
-        writer.writeheader()
-        for date, products in summary.items():
-            for name, data in products.items():
-                for shipping_method, ship_data in data['shipping_methods'].items():
-                    writer.writerow({
-                        'Date': date,
-                        'Product Name': name,
-                        'Shipping Method': shipping_method,
-                        'Total Quantity': ship_data['quantity'],
-                        'Total Amount': ship_data['total']
-                    })
-    
-    print(f"Summary written to {output_file}")
+
+    # Write the summary to a new CSV file with specified encoding
+    try:
+        with open(output_file, 'w', newline='', encoding='utf-8-sig') as csvfile:
+            fieldnames = ['Date', 'Product Name', 'Shipping Method', 'Total Quantity', 'Total Amount']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            writer.writeheader()
+            for date, products in summary.items():
+                for name, data in products.items():
+                    for shipping_method, ship_data in data['shipping_methods'].items():
+                        writer.writerow({
+                            'Date': date,
+                            'Product Name': name,
+                            'Shipping Method': shipping_method,
+                            'Total Quantity': ship_data['quantity'],
+                            'Total Amount': ship_data['total']
+                        })
+        print(f"Summary written to {output_file}")
+    except UnicodeEncodeError as e:
+        print(f"Error writing CSV file: {e}")
 
 def process_filtered_csv(input_file, output_file):
-    # Read the CSV file
-    df = pd.read_csv(input_file)
-    print(f"CSV file read: {input_file}")
+    # Read the CSV file with the specified encoding
+    try:
+        df = pd.read_csv(input_file, encoding='utf-8')
+        print(f"CSV file read: {input_file}")
+    except UnicodeDecodeError as e:
+        print(f"Error reading CSV file: {e}")
+        return
 
     # Filter out rows where Status is "Cancelled" and exclude products with "Innkeeper's" in the name
     df_filtered = df[(df['Status'] != 'Cancelled') & ~df['Line items'].str.contains("Innkeeper's", case=False, na=False)]
@@ -93,7 +103,7 @@ def process_csv_df(df, output_file):
     for _, row in df.iterrows():
         date = datetime.strptime(row['Date created'], '%d/%m/%Y %H:%M').date()
         shipping_method = row['Shipping Method'].strip() if pd.notna(row['Shipping Method']) and row['Shipping Method'].strip() else "In-Store"
-        
+
         # Process the line items
         line_items = row['Line items'].split(', Name:')
         for item in line_items:
@@ -107,46 +117,48 @@ def process_csv_df(df, output_file):
                 if len(parts) < 2:
                     continue
                 total = float(parts[1].strip())
-                
+
                 name_parts = parts[0].split('Quantity:')
                 if len(name_parts) < 2:
                     continue
-                
+
                 quantity = int(name_parts[1].strip())
                 name = name_parts[0].split('Name:')[1].strip()
-                
+
                 if date not in summary:
                     summary[date] = {}
                 if name not in summary[date]:
                     summary[date][name] = {'quantity': 0, 'total': 0, 'shipping_methods': {}}
-                
+
                 summary[date][name]['quantity'] += quantity
                 summary[date][name]['total'] += total
-                
+
                 if shipping_method not in summary[date][name]['shipping_methods']:
                     summary[date][name]['shipping_methods'][shipping_method] = {'quantity': 0, 'total': 0}
-                
+
                 summary[date][name]['shipping_methods'][shipping_method]['quantity'] += quantity
                 summary[date][name]['shipping_methods'][shipping_method]['total'] += total
             except (IndexError, ValueError) as e:
                 # Log the error or handle it as needed
                 print(f"Error processing line item: {item}, error: {e}")
-    
-    # Write the summary to a new CSV file
-    with open(output_file, 'w', newline='') as csvfile:
-        fieldnames = ['Date', 'Product Name', 'Shipping Method', 'Total Quantity', 'Total Amount']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
-        writer.writeheader()
-        for date, products in summary.items():
-            for name, data in products.items():
-                for shipping_method, ship_data in data['shipping_methods'].items():
-                    writer.writerow({
-                        'Date': date,
-                        'Product Name': name,
-                        'Shipping Method': shipping_method,
-                        'Total Quantity': ship_data['quantity'],
-                        'Total Amount': ship_data['total']
-                    })
 
-    print(f"Summary written to {output_file}")
+    # Write the summary to a new CSV file with specified encoding
+    try:
+        with open(output_file, 'w', newline='', encoding='utf-8-sig') as csvfile:
+            fieldnames = ['Date', 'Product Name', 'Shipping Method', 'Total Quantity', 'Total Amount']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            writer.writeheader()
+            for date, products in summary.items():
+                for name, data in products.items():
+                    for shipping_method, ship_data in data['shipping_methods'].items():
+                        writer.writerow({
+                            'Date': date,
+                            'Product Name': name,
+                            'Shipping Method': shipping_method,
+                            'Total Quantity': ship_data['quantity'],
+                            'Total Amount': ship_data['total']
+                        })
+        print(f"Summary written to {output_file}")
+    except UnicodeEncodeError as e:
+        print(f"Error writing CSV file: {e}")

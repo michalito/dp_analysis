@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Top Products</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<header>
+    <h1>Top Products</h1>
+    <a href="/logout" class="logout-button">
+        <span class="material-icons">logout</span> Logout
+    </a>
+</header>
+<main>
+    <h2>Top Products by Quantity and Amount</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th>Total Quantity</th>
+                <th>Total Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in top_products %}
+            <tr>
+                <td>{{ product['Product Name'] }}</td>
+                <td>{{ product['Total Quantity'] }}</td>
+                <td>{{ product['Total Amount'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <button onclick="window.location.href='/'">
+        <span class="material-icons">home</span> Back to Home
+    </button>
+</main>
+</body>
+</html>

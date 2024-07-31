@@ -72,21 +72,21 @@ def filtered():
 def upload_file():
     global uploaded_file_name, current_file, filtered_file
     if 'file' not in request.files:
-        print("No file part")
+        flash("No file part")
         return redirect(request.url)
-    
+
     file = request.files['file']
     if file.filename == '':
-        print("No selected file")
+        flash("No selected file")
         return redirect(request.url)
-    
+
     if file:
         file_path = 'input_sales_data.csv'
         file.save(file_path)
         uploaded_file_name = file.filename
         current_file = file_path
         print(f"File saved to {file_path}")
-        
+
         if os.path.exists(file_path):
             print(f"Processing {file_path}")
             process_csv(file_path, 'output_summary.csv')
@@ -95,6 +95,7 @@ def upload_file():
             print("Filtered processing complete")
             return redirect(url_for('index'))
         else:
+            flash("File not found after saving")
             print("File not found after saving")
 
     return redirect(request.url)
@@ -119,9 +120,12 @@ def download_filtered_file():
 @app.route('/visualize_sales/<metric>/<period>')
 @login_required
 def visualize_sales(metric, period):
+    if not os.path.exists('output_summary.csv'):
+        return jsonify({'error': 'Data file not found'}), 404
+
     df = pd.read_csv('output_summary.csv')
     df['Date'] = pd.to_datetime(df['Date'])
-    
+
     if period == 'day':
         df_grouped = df.groupby(['Date', 'Product Name']).agg({metric: 'sum'}).reset_index()
     elif period == 'week':
@@ -138,7 +142,7 @@ def visualize_sales(metric, period):
         df_grouped.rename(columns={'Year': 'Date'}, inplace=True)
     else:
         return "Invalid period specified", 400
-    
+
     fig = px.bar(df_grouped, x='Date', y=metric, color='Product Name', title=f'{metric.replace("_", " ").title()} per {period.capitalize()}', barmode='stack')
     graph_json = fig.to_json()
     return jsonify(graph_json)
@@ -146,9 +150,12 @@ def visualize_sales(metric, period):
 @app.route('/visualize_sales_filtered/<metric>/<period>')
 @login_required
 def visualize_sales_filtered(metric, period):
+    if not os.path.exists(filtered_file):
+        return jsonify({'error': 'Data file not found'}), 404
+
     df = pd.read_csv(filtered_file)
     df['Date'] = pd.to_datetime(df['Date'])
-    
+
     if period == 'day':
         df_grouped = df.groupby(['Date', 'Product Name']).agg({metric: 'sum'}).reset_index()
     elif period == 'week':
@@ -165,7 +172,7 @@ def visualize_sales_filtered(metric, period):
         df_grouped.rename(columns={'Year': 'Date'}, inplace=True)
     else:
         return "Invalid period specified", 400
-    
+
     fig = px.bar(df_grouped, x='Date', y=metric, color='Product Name', title=f'{metric.replace("_", " ").title()} per {period.capitalize()}', barmode='stack')
     graph_json = fig.to_json()
     return jsonify(graph_json)
@@ -173,10 +180,12 @@ def visualize_sales_filtered(metric, period):
 @app.route('/visualize_shipping_methods')
 @login_required
 def visualize_shipping_methods():
+    if not os.path.exists('output_summary.csv'):
+        return jsonify({'error': 'Data file not found'}), 404
+
     df = pd.read_csv('output_summary.csv')
-    
     df_grouped = df.groupby('Shipping Method').size().reset_index(name='Counts')
-    
+
     fig = px.pie(df_grouped, names='Shipping Method', values='Counts', title='Shipping Methods Distribution')
     graph_json = fig.to_json()
     return jsonify(graph_json)
@@ -184,13 +193,42 @@ def visualize_shipping_methods():
 @app.route('/visualize_shipping_methods_filtered')
 @login_required
 def visualize_shipping_methods_filtered():
+    if not os.path.exists(filtered_file):
+        return jsonify({'error': 'Data file not found'}), 404
+
     df = pd.read_csv(filtered_file)
-    
     df_grouped = df.groupby('Shipping Method').size().reset_index(name='Counts')
-    
+
     fig = px.pie(df_grouped, names='Shipping Method', values='Counts', title='Shipping Methods Distribution')
     graph_json = fig.to_json()
     return jsonify(graph_json)
+
+@app.route('/top_products_data_filtered')
+@login_required
+def top_products_data_filtered():
+    sort_by = request.args.get('sort_by', 'Total Amount')
+    if not os.path.exists(filtered_file):
+        return jsonify({'error': 'Data file not found'}), 404
+
+    df = pd.read_csv(filtered_file)
+    product_data = df.groupby('Product Name').agg({'Total Quantity': 'sum', 'Total Amount': 'sum'}).reset_index()
+    product_data_sorted = product_data.sort_values(by=sort_by, ascending=False)
+    product_list = product_data_sorted.to_dict(orient='records')
+    return jsonify(product_list)
+
+@app.route('/top_products_data')
+@login_required
+def top_products_data():
+    sort_by = request.args.get('sort_by', 'Total Amount')
+    if not os.path.exists('output_summary.csv'):
+        return jsonify({'error': 'Data file not found'}), 404
+
+    df = pd.read_csv('output_summary.csv')
+    product_data = df.groupby('Product Name').agg({'Total Quantity': 'sum', 'Total Amount': 'sum'}).reset_index()
+    product_data_sorted = product_data.sort_values(by=sort_by, ascending=False)
+    product_list = product_data_sorted.to_dict(orient='records')
+    return jsonify(product_list)
+
 
 if __name__ == '__main__':
     env = os.environ.get('ENV', 'development')
