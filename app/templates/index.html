@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<h2>Upload Sales Data CSV</h2>
+<form id="upload-form" action="{{ url_for('main.upload_file') }}" method="post" enctype="multipart/form-data" class="upload-form">
+    <input type="file" name="file" required>
+    <button type="submit">
+        <span class="material-icons">file_upload</span> Upload
+    </button>
+    {% if uploaded_file %}
+    <span class="uploaded-file">Currently Uploaded File: {{ uploaded_file }}</span>
+    {% endif %}
+</form>
+
+<h2>Upload Stock Data CSV</h2>
+<form id="upload-stock-form" action="{{ url_for('main.upload_stock_file') }}" method="post" enctype="multipart/form-data" class="upload-form">
+    <input type="file" name="file" required>
+    <button type="submit">
+        <span class="material-icons">file_upload</span> Upload Stock Data
+    </button>
+    {% if uploaded_file %}
+    <span class="uploaded-file">Currently Uploaded File: {{ uploaded_file }}</span>
+    {% endif %}
+</form>
+
+<div class="download-section">
+    <h3>Download Options</h3>
+    <div class="button-group">
+        <button onclick="window.location.href='{{ url_for('main.download_file') }}'">
+            <span class="material-icons">download</span> Download Summary CSV
+        </button>
+        <button onclick="window.location.href='{{ url_for('main.download_mapped_file') }}'">
+            <span class="material-icons">download</span> Download Mapped CSV
+        </button>
+    </div>
+</div>
+
+<div class="navigation-section">
+    <h3>Filtered Page</h3>
+    <button onclick="window.location.href='{{ url_for('filtered.filtered_index') }}'">
+        <span class="material-icons">filter_list</span> Go to Filtered Page
+    </button>
+</div>
+
+<h2>Visualizations</h2>
+<div class="visualization-sections">
+    <div class="visualization-section">
+        <h3>Quantity</h3>
+        <div class="button-group">
+            <button onclick="fetchVisualization('Total Quantity', 'day')">
+                <span class="material-icons">calendar_today</span> Daily
+            </button>
+            <button onclick="fetchVisualization('Total Quantity', 'week')">
+                <span class="material-icons">calendar_today</span> Weekly
+            </button>
+            <button onclick="fetchVisualization('Total Quantity', 'month')">
+                <span class="material-icons">calendar_today</span> Monthly
+            </button>
+            <button onclick="fetchVisualization('Total Quantity', 'year')">
+                <span class="material-icons">calendar_today</span> Yearly
+            </button>
+        </div>
+    </div>
+    <div class="visualization-section">
+        <h3>Amount</h3>
+        <div class="button-group">
+            <button onclick="fetchVisualization('Total Amount', 'day')">
+                <span class="material-icons">attach_money</span> Daily
+            </button>
+            <button onclick="fetchVisualization('Total Amount', 'week')">
+                <span class="material-icons">attach_money</span> Weekly
+            </button>
+            <button onclick="fetchVisualization('Total Amount', 'month')">
+                <span class="material-icons">attach_money</span> Monthly
+            </button>
+            <button onclick="fetchVisualization('Total Amount', 'year')">
+                <span class="material-icons">attach_money</span> Yearly
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="visualization-sections">
+    <div class="visualization-section">
+        <h3>Sales by Product (Quantity)</h3>
+        <div class="button-group">
+            <button onclick="fetchVisualizationByProduct('Total Quantity', 'day')">
+                <span class="material-icons">calendar_today</span> Daily
+            </button>
+            <button onclick="fetchVisualizationByProduct('Total Quantity', 'week')">
+                <span class="material-icons">calendar_today</span> Weekly
+            </button>
+            <button onclick="fetchVisualizationByProduct('Total Quantity', 'month')">
+                <span class="material-icons">calendar_today</span> Monthly
+            </button>
+            <button onclick="fetchVisualizationByProduct('Total Quantity', 'year')">
+                <span class="material-icons">calendar_today</span> Yearly
+            </button>
+        </div>
+    </div>
+    <div class="visualization-section">
+        <h3>Sales by Product (Amount)</h3>
+        <div class="button-group">
+            <button onclick="fetchVisualizationByProduct('Total Amount', 'day')">
+                <span class="material-icons">attach_money</span> Daily
+            </button>
+            <button onclick="fetchVisualizationByProduct('Total Amount', 'week')">
+                <span class="material-icons">attach_money</span> Weekly
+            </button>
+            <button onclick="fetchVisualizationByProduct('Total Amount', 'month')">
+                <span class="material-icons">attach_money</span> Monthly
+            </button>
+            <button onclick="fetchVisualizationByProduct('Total Amount', 'year')">
+                <span class="material-icons">attach_money</span> Yearly
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="visualization-section">
+    <h3>Shipping Methods</h3>
+    <button onclick="fetchShippingMethods()">
+        <span class="material-icons">local_shipping</span> View Shipping Methods
+    </button>
+</div>
+
+<div id="visualization" class="visualization-container"></div>
+
+<script>
+    async function fetchVisualization(type, period) {
+        try {
+            const response = await fetch(`/api/visualization?type=${type}&period=${period}`);
+            const data = await response.json();
+
+            const trace = {
+                x: data.x,
+                y: data.y,
+                type: 'bar'  // or 'line', depending on your preference
+            };
+
+            const layout = {
+                title: `${type} by ${period}`
+            };
+
+            Plotly.newPlot('visualization', [trace], layout);
+        } catch (error) {
+            console.error('Error fetching visualization data:', error);
+        }
+    }
+
+    async function fetchVisualizationByProduct(type, period) {
+        try {
+            const response = await fetch(`/api/visualization_by_product?type=${type}&period=${period}`);
+            const data = await response.json();
+
+            const traces = Object.keys(data.data).map(product => ({
+                x: data.x,
+                y: data.data[product],
+                name: product,
+                type: 'bar'
+            }));
+
+            const layout = {
+                title: `Sales by Product (${type}) - ${period}`,
+                barmode: 'stack'
+            };
+
+            Plotly.newPlot('visualization', traces, layout);
+        } catch (error) {
+            console.error('Error fetching visualization data:', error);
+        }
+    }
+
+    async function fetchShippingMethods() {
+        try {
+            const response = await fetch('/api/shipping_methods');
+            const data = await response.json();
+
+            const trace = {
+                labels: data.labels,
+                values: data.values,
+                type: 'pie'
+            };
+
+            const layout = {
+                title: 'Shipping Methods Distribution'
+            };
+
+            Plotly.newPlot('visualization', [trace], layout);
+        } catch (error) {
+            console.error('Error fetching shipping methods data:', error);
+        }
+    }
+</script>
+{% endblock %}

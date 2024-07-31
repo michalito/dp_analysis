@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file, jsonify, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from process_csv import process_csv, process_filtered_csv
+from process_csv import process_csv, process_filtered_csv, process_additional_csv, process_filtered_additional_csv
 import pandas as pd
 import os
 import plotly.express as px
@@ -100,6 +100,26 @@ def upload_file():
 
     return redirect(request.url)
 
+@app.route('/upload_stock', methods=['POST'])
+@login_required
+def upload_stock_file():
+    if 'file' not in request.files:
+        flash("No file part")
+        return redirect(request.url)
+
+    file = request.files['file']
+    if file.filename == '':
+        flash("No selected file")
+        return redirect(request.url)
+
+    if file:
+        file_path = 'additional_data.csv'
+        file.save(file_path)
+        flash("Stock CSV uploaded successfully")
+        return redirect(url_for('index'))
+
+    return redirect(request.url)
+
 @app.route('/download')
 @login_required
 def download_file():
@@ -109,11 +129,22 @@ def download_file():
     else:
         return "File not found", 404
 
-@app.route('/download_filtered')
+@app.route('/download_filtered_summary')
 @login_required
-def download_filtered_file():
+def download_filtered_summary():
     if os.path.exists(filtered_file):
         return send_file(filtered_file, as_attachment=True)
+    else:
+        return "File not found", 404
+
+@app.route('/download_filtered_mapped')
+@login_required
+def download_filtered_mapped():
+    output_file = 'filtered_mapped_output.csv'
+    process_filtered_additional_csv(output_file)
+    
+    if os.path.exists(output_file):
+        return send_file(output_file, as_attachment=True)
     else:
         return "File not found", 404
 
@@ -203,19 +234,6 @@ def visualize_shipping_methods_filtered():
     graph_json = fig.to_json()
     return jsonify(graph_json)
 
-@app.route('/top_products_data_filtered')
-@login_required
-def top_products_data_filtered():
-    sort_by = request.args.get('sort_by', 'Total Amount')
-    if not os.path.exists(filtered_file):
-        return jsonify({'error': 'Data file not found'}), 404
-
-    df = pd.read_csv(filtered_file)
-    product_data = df.groupby('Product Name').agg({'Total Quantity': 'sum', 'Total Amount': 'sum'}).reset_index()
-    product_data_sorted = product_data.sort_values(by=sort_by, ascending=False)
-    product_list = product_data_sorted.to_dict(orient='records')
-    return jsonify(product_list)
-
 @app.route('/top_products_data')
 @login_required
 def top_products_data():
@@ -229,6 +247,18 @@ def top_products_data():
     product_list = product_data_sorted.to_dict(orient='records')
     return jsonify(product_list)
 
+@app.route('/top_products_data_filtered')
+@login_required
+def top_products_data_filtered():
+    sort_by = request.args.get('sort_by', 'Total Amount')
+    if not os.path.exists(filtered_file):
+        return jsonify({'error': 'Data file not found'}), 404
+
+    df = pd.read_csv(filtered_file)
+    product_data = df.groupby('Product Name').agg({'Total Quantity': 'sum', 'Total Amount': 'sum'}).reset_index()
+    product_data_sorted = product_data.sort_values(by=sort_by, ascending=False)
+    product_list = product_data_sorted.to_dict(orient='records')
+    return jsonify(product_list)
 
 if __name__ == '__main__':
     env = os.environ.get('ENV', 'development')

@@ -123,6 +123,121 @@ Replace `your_admin_password` with the desired password for the admin user.
 6. **Improved UI/UX**: 
    - Enhance the user interface with responsive design and better interactivity.
 
+Certainly! Here's a section for the `README.md` file that describes the structure of the app and the codebase in a clear, concise, and organized markup format.
+
+### Project Structure
+
+The project is organized as follows:
+
+```
+app/
+├── blueprints/
+│   ├── __init__.py
+│   ├── main.py
+│   └── filtered.py
+├── static/
+│   └── css/
+│       └── styles.css
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── filtered.html
+│   ├── login.html
+├── utils/
+│   ├── __init__.py
+│   └── processing.py
+├── user_management.py
+└── __init__.py
+run.py
+Dockerfile
+default.conf
+entrypoint.sh
+nginx.conf
+requirements.txt
+README.md
+```
+
+### Codebase Overview
+
+#### `app/`
+
+The main directory containing the Flask application.
+
+- **`app/blueprints/`**: Contains the blueprint modules for organizing routes.
+  - **`__init__.py`**: Initializes the blueprint.
+  - **`main.py`**: Main routes for the application, including file uploads, downloads, and visualizations.
+  - **`filtered.py`**: Routes for handling filtered data, including visualizations and downloads.
+
+- **`app/static/`**: Contains static files such as CSS.
+  - **`css/styles.css`**: The main stylesheet for the application.
+
+- **`app/templates/`**: Contains HTML templates for the application.
+  - **`base.html`**: The base template that other templates extend.
+  - **`index.html`**: Template for the home page with visualizations and file operations.
+  - **`filtered.html`**: Template for the filtered data page with visualizations and file operations.
+  - **`login.html`**: Template for the login page.
+
+- **`app/utils/`**: Contains utility modules for data processing.
+  - **`__init__.py`**: Initializes the utils module.
+  - **`processing.py`**: Functions for processing and aggregating CSV data.
+
+- **`app/user_management.py`**: Handles user management and authentication.
+
+- **`app/__init__.py`**: Initializes the Flask application, registers blueprints, and sets up configurations.
+
+#### `Dockerfile`
+
+This file contains the instructions to build a Docker image for the application.
+
+#### `default.conf`
+
+Nginx configuration file for serving the application.
+
+#### `entrypoint.sh`
+
+Entrypoint script for starting the application.
+
+#### `nginx.conf`
+
+Main Nginx configuration file.
+
+#### `requirements.txt`
+
+A list of Python dependencies for the project.
+
+### Usage
+
+To run the application:
+
+1. **Install Dependencies**:
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+2. **Run the Application**:
+   ```sh
+   python run.py
+   ```
+
+3. **Access the Application**:
+   Open your browser and go to `http://localhost:5000`.
+
+### Running with Docker
+
+1. **Build the Docker Image**:
+   ```sh
+   docker build -t sales-app --build-arg ADMIN_PASSWORD=dragonphoenix --build-arg FLASK_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))') .
+   ```
+
+2. **Run the Docker Container**:
+   ```sh
+   docker run -e ADMIN_PASSWORD=your_admin_password -e FLASK_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))') -p 80:80 -p 443:443 sales-app
+   ```
+   ***Development Run**
+   ```sh
+   docker run -e ENV=development -e FLASK_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))') -p 5000:5000 sales-app
+   ```
+
 ## Conclusion
 
 This Sales Data Visualization Application provides a robust foundation for visualizing sales data with features like SSL support, user authentication, and flexible deployment modes. The application is designed to be extendable and can be enhanced with additional features and integrations in the future.

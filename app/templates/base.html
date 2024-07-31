@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sales Data Visualization{% endblock %}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .uploaded-file {
+            margin-left: 20px;
+            font-size: 1em;
+            color: #333;
+        }
+        .flash-message {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <nav class="navbar">
+        <div class="navbar-header">
+            <a href="{{ url_for('main.index') }}" class="navbar-brand">Sales Data Store</a>
+        </div>
+        <ul class="navbar-menu">
+            <li><a href="{{ url_for('main.index') }}">Home</a></li>
+            <li><a href="{{ url_for('filtered.filtered_index') }}">Filtered</a></li>
+            <!-- Add more links as needed -->
+            <li class="navbar-right"><a href="{{ url_for('main.logout') }}" class="logout-button">
+                <span class="material-icons">logout</span> Logout
+            </a></li>
+        </ul>
+    </nav>
+</header>
+<main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for category, message in messages %}
+          <li class="flash-message">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</main>
+<footer>
+    <p>&copy; 2024 Dragonphoenix. All rights reserved.</p>
+</footer>
+</body>
+</html>

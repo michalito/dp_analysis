@@ -1,177 +1,110 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Sales Data Visualization</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <style>
-        .scrollable-table {
-            max-height: 400px;
-            overflow-y: scroll;
-            margin-top: 10px;
-        }
-        .scrollable-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .scrollable-table th, .scrollable-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-        .scrollable-table th {
-            background-color: #f2f2f2;
-            text-align: left;
-        }
-    </style>
-</head>
-<body>
-<header>
-    <h1>Sales Data Visualization</h1>
-    <a href="/logout" class="logout-button">
-        <span class="material-icons">logout</span> Logout
-    </a>
-</header>
-<main>
-    <h2>Upload Sales Data CSV</h2>
-    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <button type="submit">
-            <span class="material-icons">file_upload</span> Upload
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<h2>Upload Sales Data CSV</h2>
+<form id="upload-form" action="{{ url_for('main.upload_file') }}" method="post" enctype="multipart/form-data" style="display: flex; align-items: center;">
+    <input type="file" name="file">
+    <button type="submit">
+        <span class="material-icons">file_upload</span> Upload
+    </button>
+    {% if uploaded_file %}
+    <span class="uploaded-file">Currently Uploaded File: {{ uploaded_file }}</span>
+    {% endif %}
+</form>
+<br>
+<h2>Upload Stock Data CSV</h2>
+<form id="upload-stock-form" action="{{ url_for('main.upload_stock_file') }}" method="post" enctype="multipart/form-data" style="display: flex; align-items: center;">
+    <input type="file" name="file">
+    <button type="submit">
+        <span class="material-icons">file_upload</span> Upload Stock Data
+    </button>
+    {% if uploaded_file %}
+    <span class="uploaded-file">Currently Uploaded File: {{ uploaded_file }}</span>
+    {% endif %}
+</form>
+<br>
+<h2>Download Processed CSV</h2>
+<button onclick="window.location.href='{{ url_for('main.download_file') }}'">
+    <span class="material-icons">download</span> Download Summary CSV
+</button>
+<br>
+<h2>Download Mapped CSV</h2>
+<button onclick="window.location.href='{{ url_for('main.download_mapped_file') }}'">
+    <span class="material-icons">download</span> Download Mapped CSV
+</button>
+<br>
+<h2>Filtered Page</h2>
+<button onclick="window.location.href='{{ url_for('filtered.filtered_index') }}'">
+    <span class="material-icons">filter_list</span> Go to Filtered Page
+</button>
+<br>
+<h2>Visualizations</h2>
+<div>
+    <h3>Quantity</h3>
+    <div class="button-group">
+        <button onclick="fetchVisualization('Total Quantity', 'day')">
+            <span class="material-icons">calendar_today</span> Daily Sales (Quantity)
         </button>
-    </form>
-    <br>
-    <h2>Currently Uploaded File: {{ uploaded_file }}</h2>
-    <br>
-    <h2>Download Processed CSV</h2>
-    <button onclick="window.location.href='/download'">
-        <span class="material-icons">download</span> Download Summary CSV
-    </button>
-    <br>
-    <h2>Filtered Page</h2>
-    <button onclick="window.location.href='/filtered'">
-        <span class="material-icons">filter_list</span> Go to Filtered Page
-    </button>
-    <br>
-    <h2>Visualizations</h2>
-    <div>
-        <h3>Quantity</h3>
-        <div class="button-group">
-            <button onclick="fetchVisualization('Total Quantity', 'day')">
-                <span class="material-icons">calendar_today</span> Daily Sales (Quantity)
-            </button>
-            <button onclick="fetchVisualization('Total Quantity', 'week')">
-                <span class="material-icons">date_range</span> Weekly Sales (Quantity)
-            </button>
-            <button onclick="fetchVisualization('Total Quantity', 'month')">
-                <span class="material-icons">calendar_view_month</span> Monthly Sales (Quantity)
-            </button>
-            <button onclick="fetchVisualization('Total Quantity', 'year')">
-                <span class="material-icons">calendar_today</span> Yearly Sales (Quantity)
-            </button>
-        </div>
-    </div>
-    <div>
-        <h3>Amount</h3>
-        <div class="button-group">
-            <button onclick="fetchVisualization('Total Amount', 'day')">
-                <span class="material-icons">attach_money</span> Daily Sales (Amount)
-            </button>
-            <button onclick="fetchVisualization('Total Amount', 'week')">
-                <span class="material-icons">date_range</span> Weekly Sales (Amount)
-            </button>
-            <button onclick="fetchVisualization('Total Amount', 'month')">
-                <span class="material-icons">calendar_view_month</span> Monthly Sales (Amount)
-            </button>
-            <button onclick="fetchVisualization('Total Amount', 'year')">
-                <span class="material-icons">calendar_today</span> Yearly Sales (Amount)
-            </button>
-        </div>
-    </div>
-    <div>
-        <h3>Shipping Methods</h3>
-        <button onclick="fetchShippingVisualization()">
-            <span class="material-icons">local_shipping</span> Shipping Methods Distribution
+        <button onclick="fetchVisualization('Total Quantity', 'week')">
+            <span class="material-icons">date_range</span> Weekly Sales (Quantity)
+        </button>
+        <button onclick="fetchVisualization('Total Quantity', 'month')">
+            <span class="material-icons">calendar_view_month</span> Monthly Sales (Quantity)
+        </button>
+        <button onclick="fetchVisualization('Total Quantity', 'year')">
+            <span class="material-icons">calendar_today</span> Yearly Sales (Quantity)
         </button>
     </div>
-    <div>
-        <h3>Top Products</h3>
-        <div class="button-group">
-            <button onclick="fetchTopProducts('Total Amount')">
-                <span class="material-icons">attach_money</span> Sort by Amount
-            </button>
-            <button onclick="fetchTopProducts('Total Quantity')">
-                <span class="material-icons">sort</span> Sort by Quantity
-            </button>
-        </div>
-        <div class="scrollable-table" id="top-products-table" style="display: none;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product Name</th>
-                        <th>Total Quantity</th>
-                        <th>Total Amount</th>
-                    </tr>
-                </thead>
-                <tbody id="top-products-body">
-                    <!-- Top products will be injected here -->
-                </tbody>
-            </table>
-        </div>
+</div>
+<div>
+    <h3>Amount</h3>
+    <div class="button-group">
+        <button onclick="fetchVisualization('Total Amount', 'day')">
+            <span class="material-icons">attach_money</span> Daily Sales (Amount)
+        </button>
+        <button onclick="fetchVisualization('Total Amount', 'week')">
+            <span class="material-icons">date_range</span> Weekly Sales (Amount)
+        </button>
+        <button onclick="fetchVisualization('Total Amount', 'month')">
+            <span class="material-icons">calendar_view_month</span> Monthly Sales (Amount)
+        </button>
+        <button onclick="fetchVisualization('Total Amount', 'year')">
+            <span class="material-icons">calendar_today</span> Yearly Sales (Amount)
+        </button>
     </div>
-    <div id="visualization" class="visualization-container"></div>
-</main>
-<script>
-    function fetchVisualization(metric, period) {
-        fetch(`/visualize_sales/${metric}/${period}`)
-            .then(response => response.json())
-            .then(data => {
-                let plotDiv = document.getElementById('visualization');
-                let parsedData = JSON.parse(data);
-                Plotly.newPlot(plotDiv, parsedData.data, parsedData.layout);
-            })
-            .catch(error => console.error('Error fetching visualization:', error));
-    }
-
-    function fetchShippingVisualization() {
-        fetch(`/visualize_shipping_methods`)
-            .then(response => response.json())
-            .then(data => {
-                let plotDiv = document.getElementById('visualization');
-                let parsedData = JSON.parse(data);
-                Plotly.newPlot(plotDiv, parsedData.data, parsedData.layout);
-            })
-            .catch(error => console.error('Error fetching visualization:', error));
-    }
-
-    function fetchTopProducts(sortBy) {
-        fetch(`/top_products_data?sort_by=${sortBy}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert(data.error);
-                    return;
-                }
-                let tableBody = document.getElementById('top-products-body');
-                tableBody.innerHTML = '';
-                data.forEach(product => {
-                    let row = document.createElement('tr');
-                    let nameCell = document.createElement('td');
-                    nameCell.textContent = product['Product Name'];
-                    let quantityCell = document.createElement('td');
-                    quantityCell.textContent = product['Total Quantity'];
-                    let amountCell = document.createElement('td');
-                    amountCell.textContent = product['Total Amount'];
-                    row.appendChild(nameCell);
-                    row.appendChild(quantityCell);
-                    row.appendChild(amountCell);
-                    tableBody.appendChild(row);
-                });
-                document.getElementById('top-products-table').style.display = 'block';
-            })
-            .catch(error => console.error('Error fetching top products:', error));
-    }
-</script>
-</body>
-</html>
+</div>
+<div>
+    <h3>Shipping Methods</h3>
+    <button onclick="fetchShippingVisualization()">
+        <span class="material-icons">local_shipping</span> Shipping Methods Distribution
+    </button>
+</div>
+<div>
+    <h3>Top Products</h3>
+    <div class="button-group">
+        <button onclick="fetchTopProducts('Total Amount')">
+            <span class="material-icons">attach_money</span> Sort by Amount
+        </button>
+        <button onclick="fetchTopProducts('Total Quantity')">
+            <span class="material-icons">sort</span> Sort by Quantity
+        </button>
+    </div>
+    <div class="scrollable-table" id="top-products-table" style="display: none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Total Quantity</th>
+                    <th>Total Amount</th>
+                </tr>
+            </thead>
+            <tbody id="top-products-body">
+                <!-- Top products will be injected here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="visualization" class="visualization-container"></div>
+{% endblock %}
