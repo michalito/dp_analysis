@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, send_file, flash, redirect, url_for, session, current_app, jsonify, request
 from flask_login import login_required
-from app.utils.processing import process_filtered_additional_csv, load_processed_data, aggregate_data_by_product, aggregate_data, aggregate_shipping_methods
+from app.utils.processing import process_filtered_additional_csv, load_processed_data, aggregate_data_by_product, aggregate_data, aggregate_shipping_methods, aggregate_categories
 import os
 
 filtered = Blueprint('filtered', __name__)
@@ -73,5 +73,15 @@ def api_filtered_shipping_methods():
     df = load_processed_data(csv_path)
     
     data = aggregate_shipping_methods(df)
+    
+    return jsonify(data)
+
+@filtered.route('/api/filtered_categories')
+@login_required
+def api_filtered_categories():
+    csv_path = os.path.join(current_app.root_path, 'filtered_sales_data.csv')
+    df = load_processed_data(csv_path)
+    
+    data = aggregate_categories(df)
     
     return jsonify(data)

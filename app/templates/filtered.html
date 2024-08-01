@@ -12,7 +12,7 @@
 {% endif %}
 
 <div class="download-section">
-    <h3>Download Filtered CSV</h3>
+    <h2>Download Filtered CSV</h2>
     <button onclick="window.location.href='{{ url_for('filtered.download_filtered_summary') }}'">
         <span class="material-icons">download</span> Download Filtered CSV
     </button>
@@ -99,6 +99,13 @@
     </button>
 </div>
 
+<div class="visualization-section">
+    <h3>Categories</h3>
+    <button onclick="fetchFilteredCategories()">
+        <span class="material-icons">category</span> View Categories
+    </button>
+</div>
+
 <div id="filtered-visualization" class="visualization-container"></div>
 
 <script>
@@ -164,6 +171,27 @@
             Plotly.newPlot('filtered-visualization', [trace], layout);
         } catch (error) {
             console.error('Error fetching filtered shipping methods data:', error);
+        }
+    }
+
+    async function fetchFilteredCategories() {
+        try {
+            const response = await fetch('/api/filtered_categories');
+            const data = await response.json();
+
+            const trace = {
+                labels: data.labels,
+                values: data.values,
+                type: 'pie'
+            };
+
+            const layout = {
+                title: 'Filtered Categories Distribution'
+            };
+
+            Plotly.newPlot('filtered-visualization', [trace], layout);
+        } catch (error) {
+            console.error('Error fetching filtered categories data:', error);
         }
     }
 </script>

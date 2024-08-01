@@ -240,3 +240,69 @@ def aggregate_shipping_methods(df):
     }
 
     return data
+
+def clean_price_column(column):
+    """Remove non-numeric characters from a price column and convert to float."""
+    return column.replace('[\€,]', '', regex=True).astype(float)
+
+def map_stock_csv_to_summary(summary_csv, stock_csv):
+    try:
+        summary_df = load_processed_data(summary_csv)
+        stock_df = pd.read_csv(stock_csv)
+
+        # Log the initial data
+        logger.info(f"Initial Stock Data:\n{stock_df.head()}")
+
+        # Clean 'Price' and 'Supplier Price' columns
+        stock_df['Price'] = clean_price_column(stock_df['Price'])
+        stock_df['Supplier Price'] = clean_price_column(stock_df['Supplier Price'])
+
+        # Log the data after cleaning
+        logger.info(f"Stock Data after cleaning:\n{stock_df[['Name', 'Price', 'Supplier Price']].head()}")
+
+        # Map 'Name' to 'Product Name' and add new columns
+        merged_df = pd.merge(summary_df, stock_df[['Name', 'Categories', 'Price', 'Supplier Price']],
+                             left_on='Product Name', right_on='Name', how='left')
+
+        # Drop 'Name' column from the merged dataframe
+        merged_df.drop(columns=['Name'], inplace=True)
+
+        # Calculate Margin and Margin Percentage, handle missing values gracefully
+        merged_df['Margin'] = merged_df['Price'] - merged_df['Supplier Price']
+        merged_df['Margin Percentage'] = np.ceil((merged_df['Margin'] / merged_df['Price']) * 100)
+
+        # Handle cases where Price or Supplier Price is NaN
+        merged_df['Margin'].fillna(0, inplace=True)
+        merged_df['Margin Percentage'].fillna(0, inplace=True)
+
+        # Log the final merged data
+        logger.info(f"Final Merged Data:\n{merged_df.head()}")
+
+        # Save the updated dataframe to the summary CSV
+        merged_df.to_csv(summary_csv, index=False, encoding='utf-8-sig')
+        logger.info(f"Mapped CSV written to {summary_csv}")
+
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+    except Exception as e:
+        logger.error(f"Error processing stock CSV: {e}")
+
+def aggregate_categories(df):
+    """
+    Aggregate categories data for visualization as a pie chart.
+    
+    Parameters:
+    df - pandas DataFrame containing the data
+
+    Returns:
+    Dictionary with keys 'labels' and 'values', suitable for a pie chart.
+    """
+    categories = df['Categories'].dropna().replace('', np.nan).dropna()
+    categories_summary = categories.value_counts()
+
+    data = {
+        'labels': categories_summary.index.tolist(),
+        'values': categories_summary.values.tolist()
+    }
+
+    return data

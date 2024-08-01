@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, login_user, logout_user, current_user
 from werkzeug.security import check_password_hash
 from app.utils.processing import process_csv, process_filtered_csv, process_additional_csv, load_processed_data, aggregate_data, aggregate_data_by_product, aggregate_shipping_methods
+from app.utils.processing import map_stock_csv_to_summary, aggregate_categories
 from app.user_management import load_user, users
 
 # Configure logging
@@ -161,3 +162,50 @@ def api_shipping_methods():
     data = aggregate_shipping_methods(df)
     
     return jsonify(data)
+
+@main.route('/upload_stock_csv', methods=['GET', 'POST'])
+@login_required
+def upload_stock_csv():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash("No file part")
+            return redirect(request.url)
+
+        file = request.files['file']
+        if file.filename == '':
+            flash("No selected file")
+            return redirect(request.url)
+
+        stock_csv_path = os.path.join(current_app.root_path, 'stock_data.csv')
+        summary_csv_path = os.path.join(current_app.root_path, 'output_summary.csv')
+        filtered_csv_path = os.path.join(current_app.root_path, 'filtered_sales_data.csv')
+
+        try:
+            file.save(stock_csv_path)
+            logger.info(f"Stock CSV saved to {stock_csv_path}")
+
+            # Update the main summary CSV
+            map_stock_csv_to_summary(summary_csv_path, stock_csv_path)
+            logger.info("Mapping stock CSV to main summary complete")
+
+            # Update the filtered CSV
+            map_stock_csv_to_summary(filtered_csv_path, stock_csv_path)
+            logger.info("Mapping stock CSV to filtered summary complete")
+
+            flash("Stock CSV uploaded and mapped successfully")
+        except Exception as e:
+            flash(f"File upload failed: {e}")
+            logger.error(f"File upload failed: {e}")
+
+    return redirect(url_for('main.index'))
+
+@main.route('/api/categories')
+@login_required
+def api_categories():
+    csv_path = os.path.join(current_app.root_path, 'output_summary.csv')
+    df = load_processed_data(csv_path)
+    
+    data = aggregate_categories(df)
+    
+    return jsonify(data)
+

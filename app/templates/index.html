@@ -25,6 +25,14 @@
     {% endif %}
 </form>
 
+<h2>Upload Stock CSV for Mapping</h2>
+<form id="upload-stock-csv-form" action="{{ url_for('main.upload_stock_csv') }}" method="post" enctype="multipart/form-data" class="upload-form">
+    <input type="file" name="file" required>
+    <button type="submit">
+        <span class="material-icons">file_upload</span> Upload and Map Stock CSV
+    </button>
+</form>
+
 <div class="download-section">
     <h3>Download Options</h3>
     <div class="button-group">
@@ -126,6 +134,13 @@
     </button>
 </div>
 
+<div class="visualization-section">
+    <h3>Categories</h3>
+    <button onclick="fetchCategories()">
+        <span class="material-icons">category</span> View Categories
+    </button>
+</div>
+
 <div id="visualization" class="visualization-container"></div>
 
 <script>
@@ -191,6 +206,27 @@
             Plotly.newPlot('visualization', [trace], layout);
         } catch (error) {
             console.error('Error fetching shipping methods data:', error);
+        }
+    }
+
+    async function fetchCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            const data = await response.json();
+
+            const trace = {
+                labels: data.labels,
+                values: data.values,
+                type: 'pie'
+            };
+
+            const layout = {
+                title: 'Categories Distribution'
+            };
+
+            Plotly.newPlot('visualization', [trace], layout);
+        } catch (error) {
+            console.error('Error fetching categories data:', error);
         }
     }
 </script>
